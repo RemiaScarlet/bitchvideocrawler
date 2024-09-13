@@ -26,18 +26,22 @@ jobs:
           python -m pip install --upgrade pip
           pip install requests
 
-      # Step 4: Run the Douyin video crawler
+      # Step 4: Run Douyin crawler
       - name: Run Douyin crawler
         run: |
           python douyin_crawler.py
 
-      # Step 5: Push the downloaded videos to the repository
-      - name: Push changes
+      # Step 5: Add and commit files if there are changes
+      - name: Commit and push changes
         run: |
           git config --global user.name 'github-actions[bot]'
           git config --global user.email 'github-actions[bot]@users.noreply.github.com'
           git add videos/
-          git commit -m "Add new Douyin videos"
-          git push
+          if git diff --cached --quiet; then
+            echo "No changes to commit."
+          else
+            git commit -m "Add new Douyin videos"
+            git push
+          fi
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
