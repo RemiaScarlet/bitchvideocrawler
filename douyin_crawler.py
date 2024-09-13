@@ -77,6 +77,10 @@ def main():
                     
                     # 下载视频
                     download_video(video_url, save_path)
+                    
+                # 打印 videos 目录中的文件，以确认下载是否成功
+                print(f"Files in videos/{folder} directory: {os.listdir(f'videos/{folder}')}")
+
             else:
                 print(f"Key 'aweme_list' not found in response for {folder}")
             
