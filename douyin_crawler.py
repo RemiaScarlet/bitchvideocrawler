@@ -1,5 +1,6 @@
 import os
 import requests
+import urllib.parse
 
 # API 的基础 URL
 base_url = "https://douyin.wtf/api/douyin/web/fetch_user_post_videos"
@@ -15,9 +16,12 @@ max_cursor = 0
 count = 20
 
 def fetch_user_videos(sec_user_id, max_cursor=0, count=20):
+    # URL 编码 sec_user_id
+    encoded_sec_user_id = urllib.parse.quote(sec_user_id)
+    
     # 构建请求参数
     params = {
-        "sec_user_id": sec_user_id,
+        "sec_user_id": encoded_sec_user_id,
         "max_cursor": max_cursor,
         "count": count
     }
@@ -27,9 +31,13 @@ def fetch_user_videos(sec_user_id, max_cursor=0, count=20):
     
     # 检查请求状态
     if response.status_code == 200:
-        return response.json()
+        try:
+            return response.json()
+        except requests.exceptions.RequestException as e:
+            print(f"Error decoding JSON response for user {sec_user_id}: {e}")
+            return None
     else:
-        print(f"Failed to fetch data: {response.status_code}")
+        print(f"Failed to fetch data: {response.status_code} for user {sec_user_id}")
         return None
 
 def download_video(video_url, save_path):
@@ -52,18 +60,25 @@ def main():
         # 获取用户作品数据
         user_videos_data = fetch_user_videos(sec_user_id, max_cursor, count)
         
+        # 打印完整的响应数据，用于调试
+        print(f"Response for {folder}: {user_videos_data}")
+        
         if user_videos_data:
-            for idx, video in enumerate(user_videos_data['aweme_list']):
-                # 获取视频信息
-                video_url = video['video']['play_addr']['url_list'][0]
-                description = video['desc']
-                video_id = video['aweme_id']
-                
-                # 构建保存路径
-                save_path = f"videos/{folder}/{video_id}.mp4"
-                
-                # 下载视频
-                download_video(video_url, save_path)
+            # 确认 'aweme_list' 键是否存在
+            if 'aweme_list' in user_videos_data:
+                for idx, video in enumerate(user_videos_data['aweme_list']):
+                    # 获取视频信息
+                    video_url = video['video']['play_addr']['url_list'][0]
+                    description = video['desc']
+                    video_id = video['aweme_id']
+                    
+                    # 构建保存路径
+                    save_path = f"videos/{folder}/{video_id}.mp4"
+                    
+                    # 下载视频
+                    download_video(video_url, save_path)
+            else:
+                print(f"Key 'aweme_list' not found in response for {folder}")
             
             # 获取下一页游标
             next_cursor = user_videos_data.get('max_cursor', 0)
